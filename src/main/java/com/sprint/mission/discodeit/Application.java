@@ -12,6 +12,16 @@ import java.util.Optional;
 import java.util.UUID;
 
 public class Application {
+    static User setupUser(UserService userService) {
+        return userService.create("woody", "woody@codeit.com", "woody1234");
+    }
+    static Channel setupChannel(ChannelService channelService) {
+        return channelService.create("공지", "공지 채널입니다.");
+    }
+    static void messageCreateTest(MessageService messageService, Channel channel, User author) {
+        Message message = messageService.create("안녕하세요.", channel.getId(), author.getId());
+        System.out.println("메시지 생성: " + message.getId());
+    }
 
     public static void main(String[] args) {
         // ==============================
@@ -28,18 +38,15 @@ public class Application {
         //============================
         // 2. User 생성 및 조회
         //============================
-        User user = userService.create("홍길동", "hong@codeit.com", "hong1234");
-        System.out.println("[User]생성: " + user.getId());
-        Optional<User> findUser = userService.findById(user.getId());
-        findUser.ifPresent(u-> System.out.println("[User] 조회 이름: " + u.getName()));
+        User user = setupUser(userService);
+        Channel channel = setupChannel(channelService);
+        messageCreateTest(messageService, channel, user);
 
-        //=============================
-        //3. Channel 생성 및 조회
-        //=============================
-        Channel channel = channelService.create("일반채널", "자유롭게 대화하는 곳입니다.");
-        System.out.println("[Channel] 생성: " + channel.getId());
-        Optional<Channel> findChannel = channelService.findById(channel.getId());
-        findChannel.ifPresent(c -> System.out.println("[Channel] 조회 이름: " + c.getName()));
+        System.out.println("------ 유저 조회 ------");
+        userService.findById(user.getId()).ifPresent(u-> System.out.println("id=" + u.getId() + ", name =" + u.getName()));
+
+        System.out.println("------채널 조회--------");
+        channelService.findById(channel.getId()).ifPresent(c-> System.out.println("id=" + c.getId() + ", channel =" + c.getName()));
 
         //=============================
         //4. Message 생성 및 조회
@@ -51,7 +58,7 @@ public class Application {
         findMessage.ifPresent(m-> System.out.println("[Message] 내용: " + m.getContent()));
 
         //============================
-        //5. 저체 조회
+        //5. 전체 조회
         //============================
         List<User> allUsers = userService.findAll();
         List<Channel> allChannels = (List<Channel>) channelService.findAll();
@@ -62,7 +69,7 @@ public class Application {
         System.out.println("[Message]전체 수: "+ allMessages.size());
 
         //=============================
-        //6. 삭제 테이스
+        //6. 삭제 테스트
         //=============================
         userService.delete(user.getId());
         channelService.delete(channel.getId());
