@@ -6,22 +6,10 @@ import com.sprint.mission.discodeit.repository.file.*;
 import com.sprint.mission.discodeit.service.*;
 import com.sprint.mission.discodeit.service.basic.*;
 
-import javax.swing.text.html.Option;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 public class Application {
-    static User setupUser(UserService userService) {
-        return userService.create("woody", "woody@codeit.com", "woody1234");
-    }
-    static Channel setupChannel(ChannelService channelService) {
-        return channelService.create("공지", "공지 채널입니다.");
-    }
-    static void messageCreateTest(MessageService messageService, Channel channel, User author) {
-        Message message = messageService.create("안녕하세요.", channel.getId(), author.getId());
-        System.out.println("메시지 생성: " + message.getId());
-    }
 
     public static void main(String[] args) {
         // ==============================
@@ -35,38 +23,56 @@ public class Application {
         ChannelService channelService = new BasicChannelService(channelRepository);
         MessageService messageService = new BasicMessageService(messageRepository);
 
-        //============================
-        // 2. User 생성 및 조회
-        //============================
+        // ==============================
+        // 2. "DB 초기화/ 모든 데이터 삭제"
+        //===============================
+        for (Message m : messageService.findAll()) {
+            messageService.delete(m.getId());
+        }
+        for (User u : userService.findAll()) {
+            userService.delete(u.getId());
+        }
+        for (Channel c : channelService.findAll()) {
+            channelService.delete(c.getId());
+        }
+
+        //===============================
+        // 3.테스트 데이터 생성 및 출력
+        //===============================
         User user = setupUser(userService);
+        System.out.println("[User] 생성: " + user.getId());
+
         Channel channel = setupChannel(channelService);
-        messageCreateTest(messageService, channel, user);
+        System.out.println("[Channel] 생성: " + channel.getId());
 
-        System.out.println("------ 유저 조회 ------");
-        userService.findById(user.getId()).ifPresent(u-> System.out.println("id=" + u.getId() + ", name =" + u.getName()));
-
-        System.out.println("------채널 조회--------");
-        channelService.findById(channel.getId()).ifPresent(c-> System.out.println("id=" + c.getId() + ", channel =" + c.getName()));
-
-        //=============================
-        //4. Message 생성 및 조회
-        //=============================
-        Message message = messageService.create("안녕하세요!", channel.getId(), user.getId());
+        Message message = setupMessage(messageService, channel, user);
         System.out.println("[Message] 생성: " + message.getId());
 
-        Optional<Message> findMessage = messageService.findById(message.getId());
-        findMessage.ifPresent(m-> System.out.println("[Message] 내용: " + m.getContent()));
+        //============================
+        //4. 상세 조회 - Optional
+        //============================
+        System.out.println("--------------유저 조회------------");
+        Optional<User> foundUser = userService.findById(user.getId());
+        foundUser.ifPresent(u -> System.out.println("id = " + u.getId() + ", name = " + u.getName()));
 
-        //============================
-        //5. 전체 조회
-        //============================
+        System.out.println("--------------채널 조회------------");
+        Optional<Channel> foundChannel = channelService.findById(channel.getId());
+        foundChannel.ifPresent(c -> System.out.println("id = " + c.getId() + ", channel = " + c.getName()));
+
+        System.out.println("-------------메시지 조회------------");
+        Optional<Message> foundMessage = messageService.findById(message.getId());
+        foundMessage.ifPresent(m -> System.out.println("id = " + m.getId() + ", content = " + m.getContent()));
+
+        //===========================
+        // 5. 전체 갯수 출력 ( 모두 List로 형 변환 없이)
+        //===========================
         List<User> allUsers = userService.findAll();
         List<Channel> allChannels = (List<Channel>) channelService.findAll();
         List<Message> allMessages = messageService.findAll();
 
         System.out.println("[User] 전체 수: " + allUsers.size());
         System.out.println("[Channel] 전체 수: " + allChannels.size());
-        System.out.println("[Message]전체 수: "+ allMessages.size());
+        System.out.println("[Message]전체 수: " + allMessages.size());
 
         //=============================
         //6. 삭제 테스트
@@ -75,10 +81,22 @@ public class Application {
         channelService.delete(channel.getId());
         messageService.delete(message.getId());
 
-        System.out.println("[삭제 후 User] 전체 수: " + allUsers.size());
-        System.out.println("[삭제 후 Channel] 전체 수: " + allChannels.size());
-        System.out.println("[삭제 후 Message] 전체 수: " + allMessages.size());
-
+        System.out.println("[삭제 후 User] 전체 수: " + userService.findAll().size());
+        System.out.println("[삭제 후 Channel] 전체 수: " + ((List<Channel>) channelService.findAll()).size());
+        System.out.println("[삭제 후 Message] 전체 수: " + messageService.findAll().size());
 
     }
+
+    static User setupUser(UserService userService) {
+        return userService.create("woody", "woody@codeit.com", "woody1234");
+    }
+
+    static Channel setupChannel(ChannelService channelService) {
+        return channelService.create("공지", "공지 채널입니다.");
+    }
+
+    static Message setupMessage(MessageService messageService, Channel channel, User author) {
+        return messageService.create("안녕하세요.", channel.getId(), author.getId());
+    }
 }
+
