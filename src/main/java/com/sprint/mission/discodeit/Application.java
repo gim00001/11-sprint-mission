@@ -115,7 +115,7 @@ public class Application {
 
     static Message setupMessage(MessageService messageService, Channel channel, User author) {
         return messageService.create("안녕하세요.", channel.getId(), author.getId());
-        
+
     }
 }
 
