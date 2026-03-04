@@ -141,4 +141,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# backup file
+*backup*
 # End of https://www.toptal.com/developers/gitignore/api/windows,java,intellij+all
