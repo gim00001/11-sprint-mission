@@ -58,7 +58,7 @@ public class DiscodeitApplication {
         MessageCreateRequestDto msgCreateDto = new MessageCreateRequestDto();
         msgCreateDto.setChannelId(savedPubCh.getId());
         msgCreateDto.setAuthorId(savedUser.getId());
-        msgCreateDto.setContent("첫번째 메시지! 헬로월드");
+        msgCreateDto.setContent("첫번째 메시지! Hi Codeit!");
         // 첨부파일 (예시)
         BinaryContentCreateRequestDto attachDto = new BinaryContentCreateRequestDto();
         attachDto.setContent("HelloFile".getBytes());
