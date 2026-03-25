@@ -4,20 +4,25 @@ import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 
 import java.io.*;
+import java.time.Instant;
 import java.util.*;
 
 public class FileMessageRepository implements MessageRepository {
-    private static final String FILE_PATH = "message.db";
+    private final String directory;
+    private final String filePath;
+    private final Map<UUID, Message> store;
 
-    private Map<UUID, Message> store = load();
+    public FileMessageRepository(String directory) {
+        this.directory = directory;
+        this.filePath = directory + File.separator + "message.db";
+        this.store = load();
+    }
 
-    // 파일에서 데이터를 불러오는 메서드
     @SuppressWarnings("unchecked")
     private Map<UUID, Message> load() {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(FILE_PATH))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
             return (Map<UUID, Message>) ois.readObject();
-        } catch (FileNotFoundException  | EOFException e) {
-            // 파일이 없거나 비어 있으면 빈 Map 반환
+        } catch (FileNotFoundException | EOFException e) {
             return new HashMap<>();
         } catch (Exception e) {
             e.printStackTrace();
@@ -27,7 +32,7 @@ public class FileMessageRepository implements MessageRepository {
 
     // 메모리의 store를 파일로 저장하는 메서드
     private void saveToFile() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_PATH))) {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
             oos.writeObject(store);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -77,6 +82,26 @@ public class FileMessageRepository implements MessageRepository {
             }
         }
         return result;
-        }
-
     }
+
+    @Override
+    public Optional<Instant> findLatestCreatedAtByChannelId(UUID channelId) {
+        return store.values().stream()
+                .filter(m -> m.getChannelId().equals(channelId))
+                .map(Message::getCreatedAt)
+                .max(Comparator.naturalOrder());
+    }
+
+    @Override
+    public void deleteAllByChannelId(UUID channelId) {
+        store.entrySet().removeIf(entry -> entry.getValue().getChannelId().equals(channelId));
+        saveToFile();
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        store.remove(id);
+        saveToFile();
+    }
+
+}

@@ -7,33 +7,30 @@ import java.io.*;
 import java.util.*;
 
 public class FileUserRepository implements UserRepository {
-    private static final String FILE_PATH = "user.db";
+    private final String directory;
+    private final String filePath;
+    private final Map<UUID, User> store;
 
-    // User 데이터를 메모리상에서 관리하는 맵
-    private Map<UUID, User> store = load();
+    public FileUserRepository(String directory) {
+        this.directory = directory;
+        this.filePath = directory + File.separator + "user.db";
+        this.store = load();
+    }
 
-    // 파일에서 데이터를 불러오는 메서드
     @SuppressWarnings("unchecked")
     private Map<UUID, User> load() {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(FILE_PATH))) {
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(filePath))) {
             return (Map<UUID, User>) ois.readObject();
         } catch (FileNotFoundException | EOFException e) {
             return new HashMap<>();
         } catch (Exception e) {
-            e.printStackTrace(); // 문제 원인 추적을 위해 로그를 남김
-             return new HashMap<>();
+            e.printStackTrace();
+            return new HashMap<>();
         }
+
     }
 
-    // 메모리의 store를 파일로 저장하는 메서드
-    private void saveToFile() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_PATH))) {
-            oos.writeObject(store);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
+    // 저장
     @Override
     public User save(User user) {
         store.put(user.getId(), user);
@@ -49,7 +46,14 @@ public class FileUserRepository implements UserRepository {
     @Override
     public Optional<User> findByUsername(String username) {
         return store.values().stream()
-                .filter(user -> user.getName().equals(username))
+                .filter(user -> Objects.equals(user.getUsername(), username))
+                .findFirst();
+    }
+
+    @Override
+    public Optional<User> findByEmail(String email) {
+        return store.values().stream()
+                .filter(user -> Objects.equals(user.getEmail(), email))
                 .findFirst();
     }
 
@@ -59,8 +63,28 @@ public class FileUserRepository implements UserRepository {
     }
 
     @Override
-    public void delete(UUID id) {
-         store.remove(id);
-         saveToFile();
+    public boolean existsByUsername(String username) {
+        return store.values().stream()
+                .anyMatch(user -> Objects.equals(user.getUsername(), username));
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return store.values().stream()
+                .anyMatch(user -> Objects.equals(user.getEmail(), email));
+    }
+
+    @Override
+    public void deleteById(UUID id) {
+        store.remove(id);
+        saveToFile();
+    }
+
+    private void saveToFile() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(filePath))) {
+            oos.writeObject(store);
+        } catch (IOException e) {
+            throw new RuntimeException("User DB 파일 저장 오류: " + e.getMessage(), e);
+        }
     }
 }

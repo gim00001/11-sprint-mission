@@ -23,17 +23,37 @@ public class JCFUserRepository implements UserRepository {
     @Override
     public Optional<User> findByUsername(String username) {
         return store.values().stream()
-                .filter(user -> user.getName().equals(username))
+                .filter(user -> user.getUsername().equals(username))
                 .findFirst();
     }
 
     @Override
-    public List<User> findAll() {
-        return new ArrayList<>(store.values());
+    public Optional<User> findByEmail(String email) {
+        return store.values().stream()
+                .filter(user -> Objects.equals(user.getEmail(), email))
+                .findFirst();
     }
 
     @Override
-    public void delete(UUID id) {
+    public boolean existsByUsername(String username) {
+        return store.values().stream()
+                .anyMatch(user -> Objects.equals(user.getUsername(), username));
+    }
+
+    @Override
+    public boolean existsByEmail(String email) {
+        return store.values().stream()
+                .anyMatch(user -> Objects.equals(user.getEmail(), email));
+    }
+
+    @Override
+    public void deleteById(UUID id) {
         store.remove(id);
+    }
+
+    @Override
+    public List<User> findAll() {
+
+        return new ArrayList<>(store.values());
     }
 }
