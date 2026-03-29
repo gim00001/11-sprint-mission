@@ -25,6 +25,6 @@ public class UserResponseDto {
         this.email = user.getEmail();
         this.online = online;
         this.profileImageContent = user.getProfileImageContent();
-        this.profileImageContentType = user.getProfileImageContetType();
+        this.profileImageContentType = user.getProfileImageContentType();
     }
 }

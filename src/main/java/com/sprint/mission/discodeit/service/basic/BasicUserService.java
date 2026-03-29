@@ -72,6 +72,23 @@ public class BasicUserService implements UserService {
     }
 
     @Override
+    public List<UserDto> getAllUsers() {
+        List<User> users = userRepository.findAll();
+
+        return users.stream()
+                .map(user -> new UserDto(
+                        user.getId(),
+                        user.getCreatedAt(),
+                        user.getUpdatedAt(),
+                        user.getUsername(),
+                        user.getEmail(),
+                        user.getOnline()
+                ))
+                .collect(Collectors.toList());
+
+    }
+
+    @Override
     public UserResponseDto update(UUID id, UserUpdateRequestDto dto) {
         User user = userRepository.findById(dto.getId())
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저 없음"));

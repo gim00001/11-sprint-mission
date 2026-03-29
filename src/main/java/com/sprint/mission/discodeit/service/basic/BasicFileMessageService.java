@@ -1,6 +1,7 @@
 package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.FileResponseDto;
+import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.FileMessage;
 import com.sprint.mission.discodeit.repository.FileMessageRepository;
 import com.sprint.mission.discodeit.service.FileMessageService;
@@ -29,5 +30,20 @@ public class BasicFileMessageService implements FileMessageService {
         return entities.stream()
                 .map(FileResponseDto::new)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public BinaryContent findBinaryContentById(UUID id) {
+        FileMessage entity = fileMessageRepository.findById(id)
+                .orElse(null);
+        if (entity == null) {
+            return null;
+        }
+        return new BinaryContent(
+                entity.getContent(),
+                entity.getContentType(),
+                entity.getUserId(),
+                entity.getMessageId()
+        );
     }
 }

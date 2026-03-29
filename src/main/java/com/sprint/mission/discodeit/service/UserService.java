@@ -19,4 +19,6 @@ public interface UserService {
     boolean login(LoginRequestDto dto); // email, pw 받아서 성공/실패 boolean 반환
 
     void delete(UUID id);
+
+    List<UserDto> getAllUsers();
 }

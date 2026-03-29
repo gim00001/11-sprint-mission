@@ -1,8 +1,10 @@
 package com.sprint.mission.discodeit.controller;
 
 import com.sprint.mission.discodeit.dto.FileResponseDto;
+import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.service.FileMessageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -24,5 +26,14 @@ public class FileMessageController {
     @RequestMapping(method = RequestMethod.GET)
     public List<FileResponseDto> getFiles(@RequestParam List<UUID> ids) {
         return fileMessageService.findAllByIds(ids);
+    }
+
+    @GetMapping("/find")
+    public ResponseEntity<BinaryContent> findBinaryContent(@RequestParam UUID binaryContentId) {
+        BinaryContent content = fileMessageService.findBinaryContentById(binaryContentId);
+        if (content == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(content);
     }
 }

@@ -3,13 +3,14 @@ package com.sprint.mission.discodeit.controller;
 import com.sprint.mission.discodeit.dto.*;
 import com.sprint.mission.discodeit.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/user")
 public class UserController {
     private final UserService userService;
 
@@ -61,5 +62,11 @@ public class UserController {
         } else {
             return new LoginResponseDto("이메일 또는 비밀번호가 올바르지 않습니다.");
         }
+    }
+
+    @GetMapping("/findAll")
+    public ResponseEntity<List<UserDto>> findAllUsers() {
+        List<UserDto> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
     }
 }

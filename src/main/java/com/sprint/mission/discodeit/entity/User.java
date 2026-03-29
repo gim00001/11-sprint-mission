@@ -18,10 +18,17 @@ public class User implements Serializable {     //Serializable 구현
     private String email;
     private String password;        // password field 추가
     private byte[] profileImageContent;
-    private String profileImageContetType;
+    private String profileImageContentType;
+    private Boolean online;
 
     // 생성자
-    public User(String username, String email, String password, byte[] profileImageContent, String profileImageContentType) {
+    public User(String username, String email, String password, Object o, Object object) {
+        this.id = UUID.randomUUID();
+        this.createdAt = Instant.now();
+        this.updatedAt = createdAt;
+    }
+
+    public User(String username, String email, String password, byte[] profileImageContent, String profileImageContentType, Boolean online) {
         this.id = UUID.randomUUID();
         this.createdAt = Instant.now();
         this.updatedAt = createdAt;
@@ -29,7 +36,8 @@ public class User implements Serializable {     //Serializable 구현
         this.email = email;
         this.password = password;       // password 할당
         this.profileImageContent = profileImageContent;
-        this.profileImageContetType = profileImageContentType;
+        this.profileImageContentType = profileImageContentType;
+        this.online = online;
     }
 
     // 기존 이미지 없는 생성자
@@ -53,7 +61,7 @@ public class User implements Serializable {     //Serializable 구현
             this.profileImageContent = profileImageContent;
         }
         if (profileImageContentType != null && !profileImageContentType.isEmpty()) {
-            this.profileImageContetType = profileImageContentType;
+            this.profileImageContentType = profileImageContentType;
         }
         this.updatedAt = Instant.now();
     }
