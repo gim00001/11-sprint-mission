@@ -19,6 +19,12 @@ public class UserController {
         this.userService = userService;
     }
 
+    @GetMapping("/findAll")
+    public ResponseEntity<List<UserDto>> findAllUsers() {
+        List<UserDto> users = userService.getAllUsers();
+        return ResponseEntity.ok(users);
+    }
+
     // 1. 사용자 등록
     @RequestMapping(method = RequestMethod.POST)
     public UserResponseDto createUser(@RequestBody UserCreateRequestDto requestDto) {
@@ -64,9 +70,4 @@ public class UserController {
         }
     }
 
-    @GetMapping("/findAll")
-    public ResponseEntity<List<UserDto>> findAllUsers() {
-        List<UserDto> users = userService.getAllUsers();
-        return ResponseEntity.ok(users);
-    }
 }

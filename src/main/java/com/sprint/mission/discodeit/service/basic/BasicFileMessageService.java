@@ -40,7 +40,7 @@ public class BasicFileMessageService implements FileMessageService {
             return null;
         }
         return new BinaryContent(
-                entity.getContent(),
+                "text.png", entity.getContent(),
                 entity.getContentType(),
                 entity.getUserId(),
                 entity.getMessageId()

@@ -42,7 +42,7 @@ public class BasicUserService implements UserService {
         // 프로필 이미지 저장(선택)
         if (dto.getProfileImageContent() != null && dto.getProfileImageContentType() != null) {
             BinaryContent profile = new BinaryContent(
-                    dto.getProfileImageContent(),
+                    "text.png", dto.getProfileImageContent(),
                     dto.getProfileImageContentType(),
                     user.getId(),
                     null
@@ -97,7 +97,7 @@ public class BasicUserService implements UserService {
 
         if (dto.getProfileImageContent() != null && dto.getProfileImageContentType() != null) {
             BinaryContent profile = new BinaryContent(
-                    dto.getProfileImageContent(),
+                    "text.png", dto.getProfileImageContent(),
                     dto.getProfileImageContentType(),
                     user.getId(),
                     null

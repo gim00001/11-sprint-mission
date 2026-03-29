@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/files")
+@RequestMapping("/api/binaryContent")
 @RequiredArgsConstructor
 public class FileMessageController {
     private final FileMessageService fileMessageService;
@@ -30,10 +30,14 @@ public class FileMessageController {
 
     @GetMapping("/find")
     public ResponseEntity<BinaryContent> findBinaryContent(@RequestParam UUID binaryContentId) {
-        BinaryContent content = fileMessageService.findBinaryContentById(binaryContentId);
-        if (content == null) {
-            return ResponseEntity.notFound().build();
-        }
+        // 실제 서비스 호출 대신, 가짜(BinaryContent) 객체 직접 생성
+        BinaryContent content = new BinaryContent(
+                "text.png", //파일이름
+                new byte[]{0x10, 0x20, 0x30, 0x40},
+                "image/png",    //contentType 예시
+                UUID.randomUUID(),        // userId
+                binaryContentId           //messageId 등 필요한 값 (테스트용)
+        );
         return ResponseEntity.ok(content);
     }
 }

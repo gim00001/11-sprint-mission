@@ -34,7 +34,7 @@ public class BasicMessageService implements MessageService {
         List<UUID> attachmentIds = new ArrayList<>();
         if (dto.getAttachments() != null) {
             for (BinaryContentCreateRequestDto contentDto : dto.getAttachments()) {
-                BinaryContent file = new BinaryContent(contentDto.getContent(), contentDto.getContentType(), null, message.getId());
+                BinaryContent file = new BinaryContent("text.png", contentDto.getContent(), contentDto.getContentType(), null, message.getId());
             }
         }
         return toResponseDto(message, attachmentIds);
@@ -66,7 +66,7 @@ public class BasicMessageService implements MessageService {
             binaryContentRepository.findAllByIdIn(List.of(msg.getId()))
                     .forEach(f -> binaryContentRepository.deleteById(f.getId()));
             for (BinaryContentCreateRequestDto contentDto : dto.getAttachments()) {
-                BinaryContent file = new BinaryContent(contentDto.getContent(), contentDto.getContentType(), null, msg.getId());
+                BinaryContent file = new BinaryContent("text.png", contentDto.getContent(), contentDto.getContentType(), null, msg.getId());
                 binaryContentRepository.save(file);
                 attachmentsIds.add(file.getId());
             }
