@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class BasicReadSatusService implements ReadStatusService {
+public class BasicReadStatusService implements ReadStatusService {
     private final ReadStatusRepository readStatusRepository;
     private final ChannelRepository channelRepository;
     private final UserRepository userRepository;
@@ -62,6 +62,7 @@ public class BasicReadSatusService implements ReadStatusService {
     @Override
     public void delete(UUID id) {
         readStatusRepository.deleteById(id);
+
     }
 
     private ReadStatusResponseDto toResponseDto(ReadStatus e) {
