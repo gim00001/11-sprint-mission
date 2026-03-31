@@ -2,96 +2,129 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.stream.Stream;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Repository;
 
-import java.io.*;
-import java.util.*;
-
+@ConditionalOnProperty(name = "discodeit.repository.type", havingValue = "file")
 @Repository
 public class FileChannelRepository implements ChannelRepository {
-    private static final String FILE_PATH = "channel.db";
-    private final Map<UUID, Channel> store;
 
-    public FileChannelRepository() {
-        this.store = load();
+  private final Path DIRECTORY;
+  private final String EXTENSION = ".ser";
+  private final FileLockProvider fileLockProvider;
+
+  public FileChannelRepository(
+      @Value("${discodeit.repository.file-directory:data}") String fileDirectory,
+      FileLockProvider fileLockProvider
+  ) {
+    this.DIRECTORY = Paths.get(System.getProperty("user.dir"), fileDirectory,
+        Channel.class.getSimpleName());
+    if (Files.notExists(DIRECTORY)) {
+      try {
+        Files.createDirectories(DIRECTORY);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
-    // private static final long serialVersionUID = 1L;
-    // private static final String FILE_PATH = "channel.db";
+    this.fileLockProvider = fileLockProvider;
+  }
 
-    //Channel 데이터를 메모리에서 관리하는 맵
-    // private Map<UUID, Channel> store = load();
+  private Path resolvePath(UUID id) {
+    return DIRECTORY.resolve(id + EXTENSION);
+  }
 
-    // 파일에서 데이터를 읽어오는 메서드
-    @SuppressWarnings("unchecked")
-    private Map<UUID, Channel> load() {
-        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(FILE_PATH))) {
-            return (Map<UUID, Channel>) ois.readObject();
-        } catch (FileNotFoundException | EOFException e) {
-            //  파일이 없거나 완전히 비어 있으면 빈 Map 반환
-            return new HashMap<>();
-        } catch (Exception e) {
-            e.printStackTrace();
-            return new HashMap<>();
-        }
+  @Override
+  public Channel save(Channel channel) {
+    Path path = resolvePath(channel.getId());
+    ReentrantLock lock = fileLockProvider.getLock(path);
+    lock.lock();
+
+    try (
+        FileOutputStream fos = new FileOutputStream(path.toFile());
+        ObjectOutputStream oos = new ObjectOutputStream(fos)
+    ) {
+      oos.writeObject(channel);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } finally {
+      lock.unlock();
     }
+    return channel;
+  }
 
-    //메모리의 store를 파일로 저장하는 메서드
-    private void saveToFile() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_PATH))) {
-            oos.writeObject(store);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+  @Override
+  public Optional<Channel> findById(UUID id) {
+    Channel channelNullable = null;
+    Path path = resolvePath(id);
+    ReentrantLock lock = fileLockProvider.getLock(path);
+    lock.lock();
+    if (Files.exists(path)) {
+      try (
+          FileInputStream fis = new FileInputStream(path.toFile());
+          ObjectInputStream ois = new ObjectInputStream(fis)
+      ) {
+        channelNullable = (Channel) ois.readObject();
+      } catch (IOException | ClassNotFoundException e) {
+        throw new RuntimeException(e);
+      } finally {
+        lock.unlock();
+      }
     }
+    return Optional.ofNullable(channelNullable);
+  }
 
-    @Override
-    public Channel save(Channel channel) {
-        store.put(channel.getId(), channel);
-        saveToFile();
-        return channel;
+  @Override
+  public List<Channel> findAll() {
+    try (Stream<Path> paths = Files.list(DIRECTORY)) {
+      return paths
+          .filter(path -> path.toString().endsWith(EXTENSION))
+          .map(path -> {
+            ReentrantLock lock = fileLockProvider.getLock(path);
+            lock.lock();
+            try (
+                FileInputStream fis = new FileInputStream(path.toFile());
+                ObjectInputStream ois = new ObjectInputStream(fis)
+            ) {
+              return (Channel) ois.readObject();
+            } catch (IOException | ClassNotFoundException e) {
+              throw new RuntimeException(e);
+            } finally {
+              lock.unlock();
+            }
+          })
+          .toList();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
+  }
 
-    @Override
-    public Optional<Channel> findById(UUID id) {
-        return Optional.ofNullable(store.get(id));
+  @Override
+  public boolean existsById(UUID id) {
+    Path path = resolvePath(id);
+    return Files.exists(path);
+  }
+
+  @Override
+  public void deleteById(UUID id) {
+    Path path = resolvePath(id);
+    try {
+      Files.delete(path);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-
-    @Override
-    public Optional<Channel> findByName(String name) {
-        return store.values().stream()
-                .filter(channel -> channel.getName().equals(name))
-                .findFirst();
-    }
-
-
-    @Override
-    public void deleteById(UUID id) {
-        store.remove(id);
-        saveToFile();
-    }
-
-    @Override
-    public List<Channel> findAll() {
-        return new ArrayList<>(store.values());
-    }
-
-    @Override
-    public List<Channel> findAllByIsPrivate(boolean isPrivate) {
-        List<Channel> result = new ArrayList<>();
-        for (Channel ch : store.values()) {
-            if (ch.isPrivate() == isPrivate) result.add(ch);
-        }
-        return result;
-    }
-
-    @Override
-    public List<Channel> findAllPrivateByUserId(UUID userId) {
-        return new ArrayList<>(); // 실제 구현은 서비스에서 ReadStatus와 조합
-    }
-
-    @Override
-    public void delete(UUID id) {
-        store.remove(id);
-        saveToFile();
-    }
+  }
 }

@@ -1,25 +1,25 @@
 package com.sprint.mission.discodeit.repository;
 
 import com.sprint.mission.discodeit.entity.User;
-
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 public interface UserRepository {
-    User save(User user);
 
-    Optional<User> findById(UUID id);
+  User save(User user);
 
-    Optional<User> findByUsername(String username);
+  Optional<User> findById(UUID id);
 
-    Optional<User> findByEmail(String email);
+  Optional<User> findByUsername(String username);
 
-    boolean existsByUsername(String username);
+  List<User> findAll();
 
-    boolean existsByEmail(String email);
+  boolean existsById(UUID id);
 
-    List<User> findAll();
+  void deleteById(UUID id);
 
-    void deleteById(UUID id);
+  boolean existsByEmail(String email);
+
+  boolean existsByUsername(String username);
 }
