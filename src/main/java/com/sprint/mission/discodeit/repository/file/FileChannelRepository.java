@@ -2,7 +2,9 @@ package com.sprint.mission.discodeit.repository.file;
 
 import com.sprint.mission.discodeit.config.FileLockProvider;
 import com.sprint.mission.discodeit.entity.Channel;
+import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
+import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -24,11 +26,14 @@ public class FileChannelRepository implements ChannelRepository {
   private final String filePath;
   private final Map<UUID, Channel> store;
   private final FileLockProvider fileLockProvider;
+  private final ReadStatusRepository readStatusRepository;
 
   // 생성자에서 디렉터리 경로를 받아옴
-  public FileChannelRepository(String directory, FileLockProvider fileLockProvider) {
+  public FileChannelRepository(String directory, FileLockProvider fileLockProvider,
+      ReadStatusRepository readStatusRepository) {  // 추가
     this.directory = directory;
     this.fileLockProvider = fileLockProvider;
+    this.readStatusRepository = readStatusRepository;  // 추가
     this.filePath = directory + File.separator + "channel.db";
     this.store = load();
   }
@@ -107,7 +112,14 @@ public class FileChannelRepository implements ChannelRepository {
 
   @Override
   public List<Channel> findAllPrivateByUserId(UUID userId) {
-    return new ArrayList<>(); // 실제 구현은 서비스에서 ReadStatus와 조합
+    List<UUID> channelIds = readStatusRepository.findAllByUserId(userId)
+        .stream()
+        .map(ReadStatus::getChannelId)
+        .toList();
+
+    return store.values().stream()
+        .filter(ch -> ch.isPrivate() && channelIds.contains(ch.getId()))
+        .toList();
   }
 
   @Override

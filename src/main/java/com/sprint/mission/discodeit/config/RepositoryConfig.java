@@ -2,24 +2,22 @@ package com.sprint.mission.discodeit.config;
 
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
+import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.file.FileChannelRepository;
 import com.sprint.mission.discodeit.repository.file.FileMessageRepository;
 import com.sprint.mission.discodeit.repository.file.FileUserRepository;
-import com.sprint.mission.discodeit.repository.jcf.JCFChannelRepository;
-import com.sprint.mission.discodeit.repository.jcf.JCFMessageRepository;
-import com.sprint.mission.discodeit.repository.jcf.JCFUserRepository;
+import java.io.File;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
 
 @Configuration
 public class RepositoryConfig {
 
-  private final RepositoryProperties properties;
-
-  public RepositoryConfig(RepositoryProperties properties) {
-    this.properties = properties;
-  }
+  @Value("${discodeit.repository.file-directory:.discodeit}")
+  private String fileDirectory;
 
   @Bean
   public FileLockProvider fileLockProvider() {
@@ -27,33 +25,25 @@ public class RepositoryConfig {
   }
 
   @Bean
+  @Primary
   public UserRepository userRepository(FileLockProvider fileLockProvider) {
-    String type = properties.getType();
-    if ("file".equalsIgnoreCase(type)) {
-      return new FileUserRepository(properties.getFileDirectory(), fileLockProvider);
-    } else {
-      return new JCFUserRepository();
-    }
+    new File(fileDirectory).mkdirs(); // 디렉토리 없으면 생성
+    return new FileUserRepository(fileDirectory, fileLockProvider);
   }
 
   @Bean
-  public ChannelRepository channelRepository(FileLockProvider fileLockProvider) {
-    String type = properties.getType();
-    if ("file".equalsIgnoreCase(type)) {
-      return new FileChannelRepository(properties.getFileDirectory(), fileLockProvider);
-    } else {
-      return new JCFChannelRepository();
-    }
+  @Primary
+  public ChannelRepository channelRepository(
+      FileLockProvider fileLockProvider,
+      ReadStatusRepository readStatusRepository) {
+    new File(fileDirectory).mkdirs();
+    return new FileChannelRepository(fileDirectory, fileLockProvider, readStatusRepository);
   }
 
   @Bean
+  @Primary
   public MessageRepository messageRepository(FileLockProvider fileLockProvider) {
-    String type = properties.getType();
-    if ("file".equalsIgnoreCase(type)) {
-      return new FileMessageRepository(properties.getFileDirectory(), fileLockProvider);
-    } else {
-      return new JCFMessageRepository();
-    }
+    new File(fileDirectory).mkdirs();
+    return new FileMessageRepository(fileDirectory, fileLockProvider);
   }
-
 }

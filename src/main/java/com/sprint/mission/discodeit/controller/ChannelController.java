@@ -7,6 +7,7 @@ import com.sprint.mission.discodeit.service.ChannelService;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,29 +25,51 @@ public class ChannelController {
 
   private final ChannelService channelService;
 
-  // 1. 공개 채널 상성 (공개/비공개 통합)
-  @PostMapping
-  public ChannelResponseDto createPublicChannel(@RequestBody ChannelCreateRequestDto dto) {
-    return channelService.createPublic(dto);
+  // 1. 공개 채널 생성
+  @PostMapping("/public")
+  public ResponseEntity<ChannelResponseDto> createPublicChannel(
+      @RequestBody ChannelCreateRequestDto dto) {
+    try {
+      return ResponseEntity.ok(channelService.createPublic(dto));
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    }
   }
 
-  // 3. 채널 정보 수정(PUT 또는 PATCH 중 REST 기준에 맞게 선택, 부분변경이면 PATCH가 더 보편적이다.)
+  // 2. 비공개 채널 생성
+  @PostMapping("/private")
+  public ResponseEntity<ChannelResponseDto> createPrivateChannel(
+      @RequestBody ChannelCreateRequestDto dto) {
+    try {
+      return ResponseEntity.ok(channelService.createPrivate(dto));
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    }
+  }
+
+  // 3. 채널 정보 수정
   @PatchMapping("/{channelId}")
-  public ChannelResponseDto updateChannel(
+  public ResponseEntity<ChannelResponseDto> updateChannel(
       @PathVariable UUID channelId,
       @RequestBody ChannelUpdateRequestDto dto) {
-    return channelService.update(channelId, dto);
+    try {
+      return ResponseEntity.ok(channelService.update(channelId, dto));
+    } catch (IllegalArgumentException e) {
+      return ResponseEntity.badRequest().build();
+    }
   }
 
   // 4. 채널 삭제
   @DeleteMapping("/{channelId}")
-  public void deleteChannel(@PathVariable UUID channelId) {
+  public ResponseEntity<Void> deleteChannel(@PathVariable UUID channelId) {
     channelService.delete(channelId);
+    return ResponseEntity.noContent().build();
   }
 
-  // 5. 특정 사용자가 볼 수 있는 채널 목록(공개+참여 비공개)
+  // 5. 채널 목록 조회
   @GetMapping
-  public List<ChannelResponseDto> findAllChannels(@RequestParam UUID userId) {
-    return channelService.findAllByUserId(userId);
+  public ResponseEntity<List<ChannelResponseDto>> findAllChannels(
+      @RequestParam UUID userId) {
+    return ResponseEntity.ok(channelService.findAllByUserId(userId));
   }
 }

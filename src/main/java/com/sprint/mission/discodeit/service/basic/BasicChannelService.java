@@ -77,14 +77,21 @@ public class BasicChannelService implements ChannelService {
     List<Channel> privates = channelRepository.findAllPrivateByUserId(userId);
     // 본인이 차여한 PRIVATE만
     List<ChannelResponseDto> result = new ArrayList<>();
+    // 공개 채널
     for (Channel channel : publics) {
-      List<UUID> participants = readStatusRepository.findAllByChannelId(channel.getId()).stream()
-          .map(ReadStatus::getUserId)
-          .toList();
+      Instant lastMsgAt = messageRepository.findLatestCreatedAtByChannelId(channel.getId())
+          .orElse(null);
+      result.add(toResponseDto(channel, null, lastMsgAt));
+    }
+    // 비공개 채널
+    for (Channel channel : privates) {
+      List<UUID> participants = readStatusRepository.findAllByChannelId(channel.getId())
+          .stream().map(ReadStatus::getUserId).toList();
       Instant lastMsgAt = messageRepository.findLatestCreatedAtByChannelId(channel.getId())
           .orElse(null);
       result.add(toResponseDto(channel, participants, lastMsgAt));
     }
+
     return result;
   }
 
@@ -115,9 +122,9 @@ public class BasicChannelService implements ChannelService {
     dto.setId(ch.getId());
     dto.setName(ch.getName());
     dto.setDescription(ch.getDescription());
-    dto.setPrivate(ch.isPrivate());
-    dto.setParticipantUserIds(participants);
-    dto.setLatesMessageCreatedAt(lastMsgAt);
+    dto.setType(ch.isPrivate() ? "PRIVATE" : "PUBLIC");  // boolean → String
+    dto.setParticipantIds(participants);                  // 필드명 변경
+    dto.setLastMessageAt(lastMsgAt);                      // 필드명 변경
     return dto;
   }
 }
