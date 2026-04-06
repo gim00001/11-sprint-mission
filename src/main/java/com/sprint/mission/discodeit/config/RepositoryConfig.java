@@ -15,40 +15,45 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RepositoryConfig {
 
-    private final RepositoryProperties properties;
+  private final RepositoryProperties properties;
 
-    public RepositoryConfig(RepositoryProperties properties) {
-        this.properties = properties;
-    }
+  public RepositoryConfig(RepositoryProperties properties) {
+    this.properties = properties;
+  }
 
-    @Bean
-    public UserRepository userRepository() {
-        String type = properties.getType();
-        if ("file".equalsIgnoreCase(type)) {
-            return new FileUserRepository(properties.getFileDirectory());
-        } else {
-            return new JCFUserRepository();
-        }
-    }
+  @Bean
+  public FileLockProvider fileLockProvider() {
+    return new FileLockProvider();
+  }
 
-    @Bean
-    public ChannelRepository channelRepository() {
-        String type = properties.getType();
-        if ("file".equalsIgnoreCase(type)) {
-            return new FileChannelRepository(properties.getFileDirectory());
-        } else {
-            return new JCFChannelRepository();
-        }
+  @Bean
+  public UserRepository userRepository(FileLockProvider fileLockProvider) {
+    String type = properties.getType();
+    if ("file".equalsIgnoreCase(type)) {
+      return new FileUserRepository(properties.getFileDirectory(), fileLockProvider);
+    } else {
+      return new JCFUserRepository();
     }
+  }
 
-    @Bean
-    public MessageRepository messageRepository() {
-        String type = properties.getType();
-        if ("file".equalsIgnoreCase(type)) {
-            return new FileMessageRepository(properties.getFileDirectory());
-        } else {
-            return new JCFMessageRepository();
-        }
+  @Bean
+  public ChannelRepository channelRepository(FileLockProvider fileLockProvider) {
+    String type = properties.getType();
+    if ("file".equalsIgnoreCase(type)) {
+      return new FileChannelRepository(properties.getFileDirectory(), fileLockProvider);
+    } else {
+      return new JCFChannelRepository();
     }
+  }
+
+  @Bean
+  public MessageRepository messageRepository(FileLockProvider fileLockProvider) {
+    String type = properties.getType();
+    if ("file".equalsIgnoreCase(type)) {
+      return new FileMessageRepository(properties.getFileDirectory(), fileLockProvider);
+    } else {
+      return new JCFMessageRepository();
+    }
+  }
 
 }
