@@ -8,7 +8,7 @@ import org.springframework.data.annotation.LastModifiedBy;
 
 @Getter
 @MappedSuperclass
-public abstract class BaseUpdateEntity extends BaseEntity {
+public abstract class BaseUpdatableEntity extends BaseEntity {
 
   @LastModifiedBy
   @Column(nullable = false)
