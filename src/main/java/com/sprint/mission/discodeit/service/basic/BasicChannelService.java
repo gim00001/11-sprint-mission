@@ -44,7 +44,7 @@ public class BasicChannelService implements ChannelService {
       if (!userRepository.findById(userId).isPresent()) {
         throw new IllegalArgumentException(("User does not exist: " + userId));
       }
-      ReadStatus readStatus = new ReadStatus(userId, channel.getId(), Instant.now());
+      ReadStatus readStatus = new ReadStatus(userId, channel.getId(), channel.getCreatedAt());
       readStatusRepository.save(readStatus);
     }
     return toResponseDto(channel, dto.getParticipantUserIds(), null);
