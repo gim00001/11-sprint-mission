@@ -1,9 +1,13 @@
 package com.sprint.mission.discodeit.controller;
 
+import com.sprint.mission.discodeit.dto.request.MessageCreateRequest;
+import com.sprint.mission.discodeit.dto.request.MessageUpdateRequest;
+import com.sprint.mission.discodeit.dto.response.MessageDto;
 import com.sprint.mission.discodeit.service.MessageService;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -26,37 +30,30 @@ public class MessageController {
   private final MessageService messageService;
 
   @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-  public ResponseEntity<MessageResponseDto> createMessage(
-      @RequestPart("messageCreateRequest") MessageCreateRequestDto dto,
+  public ResponseEntity<MessageDto> createMessage(
+      @RequestPart("messageCreateRequest") MessageCreateRequest request,
       @RequestPart(value = "attachments", required = false) List<MultipartFile> attachments) {
-    try {
-      MessageResponseDto response = messageService.create(dto.getChannelId(), dto, attachments);
-      return ResponseEntity.ok(response);
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().build();
-    }
+    MessageDto response = messageService.create(request, attachments);
+    return ResponseEntity.status(HttpStatus.CREATED).body(response);
   }
 
   @GetMapping
-  public ResponseEntity<List<MessageResponseDto>> findAllByChannelId(
+  public ResponseEntity<List<MessageDto>> findAllByChannelId(
       @RequestParam UUID channelId) {
     return ResponseEntity.ok(messageService.findAllByChannelId(channelId));
   }
 
   @PatchMapping("/{messageId}")
-  public ResponseEntity<MessageResponseDto> updateMessage(
+  public ResponseEntity<MessageDto> updateMessage(
       @PathVariable UUID messageId,
-      @RequestBody MessageUpdateRequestDto dto) {
-    try {
-      return ResponseEntity.ok(messageService.update(null, messageId, dto));
-    } catch (IllegalArgumentException e) {
-      return ResponseEntity.badRequest().build();
-    }
+      @RequestBody MessageUpdateRequest request) {
+    MessageDto response = messageService.update(messageId, request);
+    return ResponseEntity.ok(response);
   }
 
   @DeleteMapping("/{messageId}")
   public ResponseEntity<Void> deleteMessage(@PathVariable UUID messageId) {
-    messageService.delete(messageId, messageId);
+    messageService.delete(messageId);
     return ResponseEntity.noContent().build();
   }
 }
