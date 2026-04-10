@@ -4,6 +4,8 @@ import com.sprint.mission.discodeit.dto.request.LoginRequest;
 import com.sprint.mission.discodeit.dto.response.UserDto;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.AuthenticationException;
+import com.sprint.mission.discodeit.exception.NotFoundException;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.AuthService;
@@ -23,15 +25,15 @@ public class BasicAuthService implements AuthService {
   @Transactional
   public UserDto login(LoginRequest request) {
     User user = userRepository.findByUsername(request.username())
-        .orElseThrow(() -> new IllegalArgumentException(
+        .orElseThrow(() -> new NotFoundException(
             "User with username " + request.username() + " not found"));
 
     if (!user.getPassword().equals(request.password())) {
-      throw new IllegalArgumentException("Wrong password");
+      throw new AuthenticationException("Wrong password");
     }
 
     UserStatus userStatus = userStatusRepository.findByUserId(user.getId())
-        .orElseThrow(() -> new IllegalArgumentException(
+        .orElseThrow(() -> new NotFoundException(
             "UserStatus with userId " + user.getId() + " not found"));
     userStatus.update(Instant.now());
 

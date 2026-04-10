@@ -6,6 +6,8 @@ import com.sprint.mission.discodeit.dto.response.UserDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.DuplicateResourceException;
+import com.sprint.mission.discodeit.exception.NotFoundException;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
@@ -33,11 +35,12 @@ public class BasicUserService implements UserService {
   @Transactional
   public UserDto create(UserCreateRequest request, MultipartFile profile) {
     if (userRepository.existsByUsername(request.username())) {
-      throw new IllegalArgumentException(
+      throw new DuplicateResourceException(
           "User with username " + request.username() + " already exists");
     }
     if (userRepository.existsByEmail(request.email())) {
-      throw new IllegalArgumentException("User with email " + request.email() + " already exists");
+      throw new DuplicateResourceException(
+          "User with email " + request.email() + " already exists");
     }
 
     BinaryContent profileContent = null;
@@ -66,7 +69,7 @@ public class BasicUserService implements UserService {
   @Override
   public UserDto findById(UUID id) {
     User user = userRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("User with id " + id + " not found"));
+        .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
     return toDto(user);
   }
 
@@ -81,16 +84,16 @@ public class BasicUserService implements UserService {
   @Transactional
   public UserDto update(UUID id, UserUpdateRequest request, MultipartFile profile) {
     User user = userRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("User with id " + id + " not found"));
+        .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
 
     if (request.newUsername() != null && !request.newUsername().equals(user.getUsername())
         && userRepository.existsByUsername(request.newUsername())) {
-      throw new IllegalArgumentException(
+      throw new DuplicateResourceException(
           "User with username " + request.newUsername() + " already exists");
     }
     if (request.newEmail() != null && !request.newEmail().equals(user.getEmail())
         && userRepository.existsByEmail(request.newEmail())) {
-      throw new IllegalArgumentException(
+      throw new DuplicateResourceException(
           "User with email " + request.newEmail() + " already exists");
     }
 
@@ -120,7 +123,7 @@ public class BasicUserService implements UserService {
   @Transactional
   public void delete(UUID id) {
     User user = userRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("User with id " + id + " not found"));
+        .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
     userRepository.delete(user);
   }
 
