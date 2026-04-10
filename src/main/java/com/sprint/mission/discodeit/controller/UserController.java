@@ -1,10 +1,6 @@
 package com.sprint.mission.discodeit.controller;
 
-import com.sprint.mission.discodeit.dto.UserCreateRequestDto;
-import com.sprint.mission.discodeit.dto.UserDto;
-import com.sprint.mission.discodeit.dto.UserResponseDto;
-import com.sprint.mission.discodeit.dto.UserStatusResponseDto;
-import com.sprint.mission.discodeit.dto.UserUpdateRequestDto;
+import com.sprint.mission.discodeit.dto.response.UserDto;
 import com.sprint.mission.discodeit.service.UserService;
 import java.io.IOException;
 import java.util.List;

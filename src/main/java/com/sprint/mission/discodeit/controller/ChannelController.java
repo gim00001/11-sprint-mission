@@ -1,8 +1,5 @@
 package com.sprint.mission.discodeit.controller;
 
-import com.sprint.mission.discodeit.dto.ChannelCreateRequestDto;
-import com.sprint.mission.discodeit.dto.ChannelResponseDto;
-import com.sprint.mission.discodeit.dto.ChannelUpdateRequestDto;
 import com.sprint.mission.discodeit.service.ChannelService;
 import java.util.List;
 import java.util.UUID;

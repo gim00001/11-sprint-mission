@@ -45,4 +45,8 @@ public class Message extends BaseUpdatableEntity {
   public void updateContent(String newContent) {
     this.content = newContent;
   }
+
+  public void addAttachment(BinaryContent binaryContent) {
+    this.attachments.add(binaryContent);
+  }
 }

@@ -1,8 +1,5 @@
 package com.sprint.mission.discodeit.controller;
 
-import com.sprint.mission.discodeit.dto.MessageCreateRequestDto;
-import com.sprint.mission.discodeit.dto.MessageResponseDto;
-import com.sprint.mission.discodeit.dto.MessageUpdateRequestDto;
 import com.sprint.mission.discodeit.service.MessageService;
 import java.util.List;
 import java.util.UUID;
