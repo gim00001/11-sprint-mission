@@ -10,6 +10,7 @@ import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.UserService;
+import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -26,6 +27,7 @@ public class BasicUserService implements UserService {
   private final UserRepository userRepository;
   private final UserStatusRepository userStatusRepository;
   private final BinaryContentRepository binaryContentRepository;
+  private final BinaryContentStorage binaryContentStorage;
 
   @Override
   @Transactional
@@ -43,15 +45,15 @@ public class BasicUserService implements UserService {
       try {
         profileContent = new BinaryContent(
             profile.getOriginalFilename(),
-            (long) profile.getBytes().length,
+            profile.getSize(),
             profile.getContentType()
         );
         binaryContentRepository.save(profileContent);
+        binaryContentStorage.put(profileContent.getId(), profile.getBytes()); // ← 추가
       } catch (Exception e) {
         throw new RuntimeException("프로필 이미지 저장 실패", e);
       }
     }
-
     User user = new User(request.username(), request.email(), request.password(), profileContent);
     userRepository.save(user);
 

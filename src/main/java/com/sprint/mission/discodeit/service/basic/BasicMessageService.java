@@ -12,6 +12,7 @@ import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.service.MessageService;
+import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +29,7 @@ public class BasicMessageService implements MessageService {
   private final ChannelRepository channelRepository;
   private final UserRepository userRepository;
   private final BinaryContentRepository binaryContentRepository;
+  private final BinaryContentStorage binaryContentStorage;
 
   @Override
   @Transactional
@@ -50,6 +52,7 @@ public class BasicMessageService implements MessageService {
               file.getContentType()
           );
           binaryContentRepository.save(bc);
+          binaryContentStorage.put(bc.getId(), file.getBytes());
           message.addAttachment(bc);
         } catch (Exception e) {
           throw new RuntimeException("파일 저장 실패", e);
