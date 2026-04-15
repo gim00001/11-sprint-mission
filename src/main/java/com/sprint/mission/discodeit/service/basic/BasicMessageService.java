@@ -4,6 +4,7 @@ import com.sprint.mission.discodeit.dto.request.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.request.MessageUpdateRequest;
 import com.sprint.mission.discodeit.dto.response.BinaryContentDto;
 import com.sprint.mission.discodeit.dto.response.MessageDto;
+import com.sprint.mission.discodeit.dto.response.PageResponse;
 import com.sprint.mission.discodeit.dto.response.UserDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Channel;
@@ -17,9 +18,13 @@ import com.sprint.mission.discodeit.repository.UserRepository;
 import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -70,10 +75,33 @@ public class BasicMessageService implements MessageService {
   }
 
   @Override
-  public List<MessageDto> findAllByChannelId(UUID channelId) {
-    return messageRepository.findAllByChannelId(channelId).stream()
+  public PageResponse<MessageDto> findAllByChannelId(UUID channelId, Instant cursor, int size) {
+    Pageable pageable = PageRequest.of(0, size);
+    Slice<Message> slice;
+
+    if (cursor == null) {
+      slice = messageRepository.findAllByChannelIdOrderByCreatedAtDesc(channelId, pageable);
+    } else {
+      slice = messageRepository.findAllByChannelIdAndCreatedAtBeforeOrderByCreatedAtDesc(
+          channelId, cursor, pageable);
+    }
+
+    List<MessageDto> content = slice.getContent().stream()
         .map(this::toDto)
         .toList();
+
+    Instant nextCursor = null;
+    if (slice.hasNext() && !content.isEmpty()) {
+      nextCursor = content.get(content.size() - 1).createdAt();
+    }
+
+    return new PageResponse<>(
+        content,
+        nextCursor,
+        size,
+        slice.hasNext(),
+        null
+    );
   }
 
   @Override

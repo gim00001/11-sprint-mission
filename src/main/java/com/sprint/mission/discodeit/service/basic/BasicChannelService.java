@@ -105,9 +105,9 @@ public class BasicChannelService implements ChannelService {
   }
 
   private ChannelDto toDto(Channel channel) {
-    Instant lastMessageAt = messageRepository.findAllByChannelId(channel.getId()).stream()
+    Instant lastMessageAt = messageRepository
+        .findTopByChannelIdOrderByCreatedAtDesc(channel.getId())  // ← 수정!
         .map(Message::getCreatedAt)
-        .max(Instant::compareTo)
         .orElse(null);
 
     List<UserDto> participants = new ArrayList<>();
