@@ -15,6 +15,9 @@ spring:
         format_sql: true
         highlight_sql: true
     open-in-view: false
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
 
 discodeit:
   repository:

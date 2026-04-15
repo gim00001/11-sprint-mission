@@ -13,7 +13,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Getter
 @MappedSuperclass
 @EntityListeners(AuditingEntityListener.class)
-public class BaseEntity {
+public abstract class BaseEntity {  // ← abstract 추가!
 
   @Id
   @Column(columnDefinition = "uuid", updatable = false, nullable = false)
@@ -25,6 +25,6 @@ public class BaseEntity {
 
   protected BaseEntity() {
     this.id = UUID.randomUUID();
+    this.createdAt = Instant.now();
   }
-
 }

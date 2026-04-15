@@ -2,15 +2,19 @@ package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.request.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.request.MessageUpdateRequest;
+import com.sprint.mission.discodeit.dto.response.BinaryContentDto;
 import com.sprint.mission.discodeit.dto.response.MessageDto;
+import com.sprint.mission.discodeit.dto.response.UserDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.util.List;
@@ -30,6 +34,7 @@ public class BasicMessageService implements MessageService {
   private final UserRepository userRepository;
   private final BinaryContentRepository binaryContentRepository;
   private final BinaryContentStorage binaryContentStorage;
+  private final UserStatusRepository userStatusRepository;
 
   @Override
   @Transactional
@@ -60,7 +65,7 @@ public class BasicMessageService implements MessageService {
       });
     }
 
-    messageRepository.save(message);
+    messageRepository.saveAndFlush(message);
     return toDto(message);
   }
 
@@ -91,16 +96,48 @@ public class BasicMessageService implements MessageService {
   }
 
   private MessageDto toDto(Message message) {
+    UserDto authorDto = null;
+    if (message.getAuthor() != null) {
+      User author = message.getAuthor();
+      UserStatus status = userStatusRepository.findByUserId(author.getId()).orElse(null);
+
+      BinaryContentDto profileDto = null;
+      if (author.getProfile() != null) {
+        BinaryContent profile = author.getProfile();
+        profileDto = new BinaryContentDto(
+            profile.getId(),
+            profile.getFileName(),
+            profile.getSize(),
+            profile.getContentType()
+        );
+      }
+
+      authorDto = new UserDto(
+          author.getId(),
+          author.getUsername(),
+          author.getEmail(),
+          profileDto,  // ← author.getProfile().getId() → profileDto로 변경
+          status != null && status.isOnline()
+      );
+    }
+
+    List<BinaryContentDto> attachmentDtos = message.getAttachments().stream()
+        .map(bc -> new BinaryContentDto(
+            bc.getId(),
+            bc.getFileName(),
+            bc.getSize(),
+            bc.getContentType()
+        ))
+        .toList();
+
     return new MessageDto(
         message.getId(),
         message.getCreatedAt(),
         message.getUpdatedAt(),
         message.getContent(),
         message.getChannel().getId(),
-        message.getAuthor() != null ? message.getAuthor().getId() : null,
-        message.getAttachments().stream()
-            .map(BinaryContent::getId)
-            .toList()
+        authorDto,
+        attachmentDtos
     );
   }
 }

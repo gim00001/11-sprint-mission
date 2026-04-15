@@ -1,7 +1,9 @@
 package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.request.LoginRequest;
+import com.sprint.mission.discodeit.dto.response.BinaryContentDto;
 import com.sprint.mission.discodeit.dto.response.UserDto;
+import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.exception.AuthenticationException;
@@ -37,11 +39,22 @@ public class BasicAuthService implements AuthService {
             "UserStatus with userId " + user.getId() + " not found"));
     userStatus.update(Instant.now());
 
+    BinaryContentDto profileDto = null;
+    if (user.getProfile() != null) {
+      BinaryContent profile = user.getProfile();
+      profileDto = new BinaryContentDto(
+          profile.getId(),
+          profile.getFileName(),
+          profile.getSize(),
+          profile.getContentType()
+      );
+    }
+
     return new UserDto(
         user.getId(),
         user.getUsername(),
         user.getEmail(),
-        user.getProfile() != null ? user.getProfile().getId() : null,
+        profileDto,  // ← 변경!
         userStatus.isOnline()
     );
   }

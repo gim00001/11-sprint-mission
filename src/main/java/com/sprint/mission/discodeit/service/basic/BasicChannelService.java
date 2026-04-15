@@ -3,18 +3,24 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.request.PrivateChannelCreateRequest;
 import com.sprint.mission.discodeit.dto.request.PublicChannelCreateRequest;
 import com.sprint.mission.discodeit.dto.request.PublicChannelUpdateRequest;
+import com.sprint.mission.discodeit.dto.response.BinaryContentDto;
 import com.sprint.mission.discodeit.dto.response.ChannelDto;
+import com.sprint.mission.discodeit.dto.response.UserDto;
+import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Channel.ChannelType;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
+import com.sprint.mission.discodeit.entity.UserStatus;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
+import com.sprint.mission.discodeit.repository.UserStatusRepository;
 import com.sprint.mission.discodeit.service.ChannelService;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +36,7 @@ public class BasicChannelService implements ChannelService {
   private final ReadStatusRepository readStatusRepository;
   private final MessageRepository messageRepository;
   private final UserRepository userRepository;
+  private final UserStatusRepository userStatusRepository;
 
   @Override
   @Transactional
@@ -99,23 +106,44 @@ public class BasicChannelService implements ChannelService {
 
   private ChannelDto toDto(Channel channel) {
     Instant lastMessageAt = messageRepository.findAllByChannelId(channel.getId()).stream()
-        .map(Message::getCreatedAt)  // 메서드 참조로 변경
+        .map(Message::getCreatedAt)
         .max(Instant::compareTo)
         .orElse(null);
 
-    List<UUID> participantIds = null;
+    List<UserDto> participants = new ArrayList<>();
     if (channel.getType() == ChannelType.PRIVATE) {
-      participantIds = readStatusRepository.findAllByChannelId(channel.getId()).stream()
-          .map(rs -> rs.getUser().getId())
+      participants = readStatusRepository.findAllByChannelId(channel.getId()).stream()
+          .map(rs -> {
+            User user = rs.getUser();
+            UserStatus status = userStatusRepository.findByUserId(user.getId()).orElse(null);
+
+            BinaryContentDto profileDto = null;
+            if (user.getProfile() != null) {
+              BinaryContent profile = user.getProfile();
+              profileDto = new BinaryContentDto(
+                  profile.getId(),
+                  profile.getFileName(),
+                  profile.getSize(),
+                  profile.getContentType()
+              );
+            }
+
+            return new UserDto(
+                user.getId(),
+                user.getUsername(),
+                user.getEmail(),
+                profileDto,           // ← user.getProfile().getId() → profileDto로 변경
+                status != null && status.isOnline()
+            );
+          })
           .toList();
     }
-
-    return new ChannelDto(
+    return new ChannelDto(      // ← 이게 빠졌어요!
         channel.getId(),
         channel.getType().name(),
         channel.getName(),
         channel.getDescription(),
-        participantIds,
+        participants,
         lastMessageAt
     );
   }
