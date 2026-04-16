@@ -26,6 +26,7 @@ public class Message extends BaseUpdatableEntity {
       joinColumns = @JoinColumn(name = "message_id"),
       inverseJoinColumns = @JoinColumn(name = "attachment_id")
   )
+  @org.hibernate.annotations.BatchSize(size = 100)
   private final List<BinaryContent> attachments = new ArrayList<>();
   @Column(columnDefinition = "text")
   private String content;

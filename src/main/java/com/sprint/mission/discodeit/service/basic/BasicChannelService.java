@@ -3,16 +3,16 @@ package com.sprint.mission.discodeit.service.basic;
 import com.sprint.mission.discodeit.dto.request.PrivateChannelCreateRequest;
 import com.sprint.mission.discodeit.dto.request.PublicChannelCreateRequest;
 import com.sprint.mission.discodeit.dto.request.PublicChannelUpdateRequest;
-import com.sprint.mission.discodeit.dto.response.BinaryContentDto;
 import com.sprint.mission.discodeit.dto.response.ChannelDto;
 import com.sprint.mission.discodeit.dto.response.UserDto;
-import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Channel.ChannelType;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.ReadStatus;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.mapper.ChannelMapper;
+import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
 import com.sprint.mission.discodeit.repository.ReadStatusRepository;
@@ -37,6 +37,8 @@ public class BasicChannelService implements ChannelService {
   private final MessageRepository messageRepository;
   private final UserRepository userRepository;
   private final UserStatusRepository userStatusRepository;
+  private final ChannelMapper channelMapper;
+  private final UserMapper userMapper;
 
   @Override
   @Transactional
@@ -66,7 +68,8 @@ public class BasicChannelService implements ChannelService {
   @Override
   public ChannelDto findById(UUID id) {
     Channel channel = channelRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("Channel with id " + id + " not found"));
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Channel with id " + id + " not found"));
     return toDto(channel);
   }
 
@@ -87,8 +90,8 @@ public class BasicChannelService implements ChannelService {
   @Transactional
   public ChannelDto update(UUID channelId, PublicChannelUpdateRequest request) {
     Channel channel = channelRepository.findById(channelId)
-        .orElseThrow(
-            () -> new IllegalArgumentException("Channel with id " + channelId + " not found"));
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Channel with id " + channelId + " not found"));
     if (channel.getType() == ChannelType.PRIVATE) {
       throw new IllegalArgumentException("Private channel cannot be updated");
     }
@@ -100,13 +103,14 @@ public class BasicChannelService implements ChannelService {
   @Transactional
   public void delete(UUID id) {
     Channel channel = channelRepository.findById(id)
-        .orElseThrow(() -> new IllegalArgumentException("Channel with id " + id + " not found"));
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Channel with id " + id + " not found"));
     channelRepository.delete(channel);
   }
 
   private ChannelDto toDto(Channel channel) {
     Instant lastMessageAt = messageRepository
-        .findTopByChannelIdOrderByCreatedAtDesc(channel.getId())  // ← 수정!
+        .findTopByChannelIdOrderByCreatedAtDesc(channel.getId())
         .map(Message::getCreatedAt)
         .orElse(null);
 
@@ -114,37 +118,13 @@ public class BasicChannelService implements ChannelService {
     if (channel.getType() == ChannelType.PRIVATE) {
       participants = readStatusRepository.findAllByChannelId(channel.getId()).stream()
           .map(rs -> {
-            User user = rs.getUser();
-            UserStatus status = userStatusRepository.findByUserId(user.getId()).orElse(null);
-
-            BinaryContentDto profileDto = null;
-            if (user.getProfile() != null) {
-              BinaryContent profile = user.getProfile();
-              profileDto = new BinaryContentDto(
-                  profile.getId(),
-                  profile.getFileName(),
-                  profile.getSize(),
-                  profile.getContentType()
-              );
-            }
-
-            return new UserDto(
-                user.getId(),
-                user.getUsername(),
-                user.getEmail(),
-                profileDto,           // ← user.getProfile().getId() → profileDto로 변경
-                status != null && status.isOnline()
-            );
+            UserStatus status = userStatusRepository
+                .findByUserId(rs.getUser().getId()).orElse(null);
+            return userMapper.toDto(rs.getUser(), status);
           })
           .toList();
     }
-    return new ChannelDto(      // ← 이게 빠졌어요!
-        channel.getId(),
-        channel.getType().name(),
-        channel.getName(),
-        channel.getDescription(),
-        participants,
-        lastMessageAt
-    );
+
+    return channelMapper.toDto(channel, participants, lastMessageAt);
   }
 }

@@ -31,4 +31,4 @@ discodeit:
 logging:
   level:
     org.springframework.web: DEBUG
-    com.sprint.mission: DEBUG
+    com.sprint.mission: TRACE

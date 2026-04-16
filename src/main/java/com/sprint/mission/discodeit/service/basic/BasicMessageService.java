@@ -2,7 +2,6 @@ package com.sprint.mission.discodeit.service.basic;
 
 import com.sprint.mission.discodeit.dto.request.MessageCreateRequest;
 import com.sprint.mission.discodeit.dto.request.MessageUpdateRequest;
-import com.sprint.mission.discodeit.dto.response.BinaryContentDto;
 import com.sprint.mission.discodeit.dto.response.MessageDto;
 import com.sprint.mission.discodeit.dto.response.PageResponse;
 import com.sprint.mission.discodeit.dto.response.UserDto;
@@ -11,6 +10,8 @@ import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.mapper.MessageMapper;
+import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.ChannelRepository;
 import com.sprint.mission.discodeit.repository.MessageRepository;
@@ -20,7 +21,9 @@ import com.sprint.mission.discodeit.service.MessageService;
 import com.sprint.mission.discodeit.storage.BinaryContentStorage;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -40,6 +43,8 @@ public class BasicMessageService implements MessageService {
   private final BinaryContentRepository binaryContentRepository;
   private final BinaryContentStorage binaryContentStorage;
   private final UserStatusRepository userStatusRepository;
+  private final MessageMapper messageMapper;
+  private final UserMapper userMapper;
 
   @Override
   @Transactional
@@ -71,7 +76,9 @@ public class BasicMessageService implements MessageService {
     }
 
     messageRepository.saveAndFlush(message);
-    return toDto(message);
+    UserStatus status = userStatusRepository.findByUserId(author.getId()).orElse(null);
+    UserDto authorDto = userMapper.toDto(author, status);  // ← 추가
+    return messageMapper.toDto(message, status, authorDto);  // ← 수정
   }
 
   @Override
@@ -86,8 +93,23 @@ public class BasicMessageService implements MessageService {
           channelId, cursor, pageable);
     }
 
-    List<MessageDto> content = slice.getContent().stream()
-        .map(this::toDto)
+    List<Message> messages = slice.getContent();
+
+    List<UUID> authorIds = messages.stream()
+        .filter(m -> m.getAuthor() != null)
+        .map(m -> m.getAuthor().getId())
+        .distinct()
+        .toList();
+
+    Map<UUID, UserStatus> statusMap = userStatusRepository
+        .findAllByUserIdIn(authorIds).stream()
+        .collect(Collectors.toMap(
+            us -> us.getUser().getId(),
+            us -> us
+        ));
+
+    List<MessageDto> content = messages.stream()
+        .map(m -> toDto(m, statusMap))
         .toList();
 
     Instant nextCursor = null;
@@ -95,77 +117,41 @@ public class BasicMessageService implements MessageService {
       nextCursor = content.get(content.size() - 1).createdAt();
     }
 
-    return new PageResponse<>(
-        content,
-        nextCursor,
-        size,
-        slice.hasNext(),
-        null
-    );
+    return new PageResponse<>(content, nextCursor, size, slice.hasNext(), null);
   }
 
   @Override
   @Transactional
   public MessageDto update(UUID messageId, MessageUpdateRequest request) {
     Message message = messageRepository.findById(messageId)
-        .orElseThrow(
-            () -> new IllegalArgumentException("Message with id " + messageId + " not found"));
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Message with id " + messageId + " not found"));
     message.updateContent(request.newContent());
-    return toDto(message);
+    UserStatus status = message.getAuthor() != null
+        ? userStatusRepository.findByUserId(message.getAuthor().getId()).orElse(null)
+        : null;
+    UserDto authorDto = message.getAuthor() != null  // ← 추가
+        ? userMapper.toDto(message.getAuthor(), status)
+        : null;
+    return messageMapper.toDto(message, status, authorDto);  // ← 수정
   }
 
   @Override
   @Transactional
   public void delete(UUID messageId) {
     Message message = messageRepository.findById(messageId)
-        .orElseThrow(
-            () -> new IllegalArgumentException("Message with id " + messageId + " not found"));
+        .orElseThrow(() -> new IllegalArgumentException(
+            "Message with id " + messageId + " not found"));
     messageRepository.delete(message);
   }
 
-  private MessageDto toDto(Message message) {
-    UserDto authorDto = null;
-    if (message.getAuthor() != null) {
-      User author = message.getAuthor();
-      UserStatus status = userStatusRepository.findByUserId(author.getId()).orElse(null);
-
-      BinaryContentDto profileDto = null;
-      if (author.getProfile() != null) {
-        BinaryContent profile = author.getProfile();
-        profileDto = new BinaryContentDto(
-            profile.getId(),
-            profile.getFileName(),
-            profile.getSize(),
-            profile.getContentType()
-        );
-      }
-
-      authorDto = new UserDto(
-          author.getId(),
-          author.getUsername(),
-          author.getEmail(),
-          profileDto,  // ← author.getProfile().getId() → profileDto로 변경
-          status != null && status.isOnline()
-      );
-    }
-
-    List<BinaryContentDto> attachmentDtos = message.getAttachments().stream()
-        .map(bc -> new BinaryContentDto(
-            bc.getId(),
-            bc.getFileName(),
-            bc.getSize(),
-            bc.getContentType()
-        ))
-        .toList();
-
-    return new MessageDto(
-        message.getId(),
-        message.getCreatedAt(),
-        message.getUpdatedAt(),
-        message.getContent(),
-        message.getChannel().getId(),
-        authorDto,
-        attachmentDtos
-    );
+  private MessageDto toDto(Message message, Map<UUID, UserStatus> statusMap) {
+    UserStatus status = message.getAuthor() != null
+        ? statusMap.get(message.getAuthor().getId())
+        : null;
+    UserDto authorDto = message.getAuthor() != null  // ← 추가
+        ? userMapper.toDto(message.getAuthor(), status)
+        : null;
+    return messageMapper.toDto(message, status, authorDto);  // ← 수정
   }
 }
