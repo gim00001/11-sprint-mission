@@ -20,10 +20,12 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
@@ -38,11 +40,15 @@ public class BasicUserService implements UserService {
   @Override
   @Transactional
   public UserDto create(UserCreateRequest request, MultipartFile profile) {
+    log.debug("사용자 생성 요청 - username: {}, email: {}", request.username(), request.email());
+
     if (userRepository.existsByUsername(request.username())) {
+      log.warn("사용자 생성 실패 - 중복 username: {}", request.username());
       throw new DuplicateResourceException(
           "User with username " + request.username() + " already exists");
     }
     if (userRepository.existsByEmail(request.email())) {
+      log.warn("사용자 생성 실패 - 중복 email: {}", request.email());
       throw new DuplicateResourceException(
           "User with email " + request.email() + " already exists");
     }
@@ -57,7 +63,9 @@ public class BasicUserService implements UserService {
         );
         binaryContentRepository.save(profileContent);
         binaryContentStorage.put(profileContent.getId(), profile.getBytes());
+        log.debug("프로필 이미지 저장 완료 - fileId: {}", profileContent.getId());
       } catch (Exception e) {
+        log.error("프로필 이미지 저장 실패 - username: {}", request.username(), e);
         throw new RuntimeException("프로필 이미지 저장 실패", e);
       }
     }
@@ -68,18 +76,24 @@ public class BasicUserService implements UserService {
     UserStatus userStatus = new UserStatus(user, Instant.now());
     userStatusRepository.save(userStatus);
 
+    log.info("사용자 생성 완료 - id: {}, username: {}", user.getId(), user.getUsername());
     return toDto(user);
   }
 
   @Override
   public UserDto findById(UUID id) {
+    log.debug("사용자 단건 조회 - id: {}", id);
     User user = userRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
+        .orElseThrow(() -> {
+          log.warn("사용자 조회 실패 - 존재하지 않는 id: {}", id);
+          return new NotFoundException("User with id " + id + " not found");
+        });
     return toDto(user);
   }
 
   @Override
   public List<UserDto> findAll() {
+    log.debug("사용자 전체 조회");
     List<User> users = userRepository.findAll();
     List<UUID> userIds = users.stream().map(User::getId).toList();
 
@@ -98,16 +112,22 @@ public class BasicUserService implements UserService {
   @Override
   @Transactional
   public UserDto update(UUID id, UserUpdateRequest request, MultipartFile profile) {
+    log.debug("사용자 수정 요청 - id: {}", id);
     User user = userRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
+        .orElseThrow(() -> {
+          log.warn("사용자 수정 실패 - 존재하지 않는 id: {}", id);
+          return new NotFoundException("User with id " + id + " not found");
+        });
 
     if (request.newUsername() != null && !request.newUsername().equals(user.getUsername())
         && userRepository.existsByUsername(request.newUsername())) {
+      log.warn("사용자 수정 실패 - 중복 username: {}", request.newUsername());
       throw new DuplicateResourceException(
           "User with username " + request.newUsername() + " already exists");
     }
     if (request.newEmail() != null && !request.newEmail().equals(user.getEmail())
         && userRepository.existsByEmail(request.newEmail())) {
+      log.warn("사용자 수정 실패 - 중복 email: {}", request.newEmail());
       throw new DuplicateResourceException(
           "User with email " + request.newEmail() + " already exists");
     }
@@ -122,7 +142,9 @@ public class BasicUserService implements UserService {
         );
         binaryContentRepository.save(profileContent);
         binaryContentStorage.put(profileContent.getId(), profile.getBytes());
+        log.debug("프로필 이미지 수정 완료 - fileId: {}", profileContent.getId());
       } catch (Exception e) {
+        log.error("프로필 이미지 저장 실패 - userId: {}", id, e);
         throw new RuntimeException("프로필 이미지 저장 실패", e);
       }
     }
@@ -132,19 +154,25 @@ public class BasicUserService implements UserService {
       user.updateProfile(profileContent);
     }
 
+    log.info("사용자 수정 완료 - id: {}", id);
     return toDto(user);
   }
 
   @Override
   @Transactional
   public void delete(UUID id) {
+    log.debug("사용자 삭제 요청 - id: {}", id);
     User user = userRepository.findById(id)
-        .orElseThrow(() -> new NotFoundException("User with id " + id + " not found"));
+        .orElseThrow(() -> {
+          log.warn("사용자 삭제 실패 - 존재하지 않는 id: {}", id);
+          return new NotFoundException("User with id " + id + " not found");
+        });
     userRepository.delete(user);
+    log.info("사용자 삭제 완료 - id: {}", id);
   }
 
   private UserDto toDto(User user) {
     UserStatus status = userStatusRepository.findByUserId(user.getId()).orElse(null);
-    return userMapper.toDto(user, status);  // ← Mapper 사용!
+    return userMapper.toDto(user, status);
   }
 }
