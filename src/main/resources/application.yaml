@@ -23,3 +23,32 @@ discodeit:
 logging:
   level:
     root: INFO
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers
+  info:
+    env:
+      enabled: true
+
+info:
+  app:
+    name: Discodeit
+    version: 1.7.0
+  java:
+    version: 17
+  spring-boot:
+    version: 3.4.0
+  datasource:
+    url: ${spring.datasource.url:unknown}
+    driver-class-name: ${spring.datasource.driver-class-name:unknown}
+  jpa:
+    ddl-auto: ${spring.jpa.hibernate.ddl-auto:unknown}
+  storage:
+    type: ${discodeit.storage.type:unknown}
+    path: ${discodeit.storage.local.root-path:unknown}
+  multipart:
+    max-file-size: ${spring.servlet.multipart.max-file-size:unknown}
+    max-request-size: ${spring.servlet.multipart.max-request-size:unknown}
