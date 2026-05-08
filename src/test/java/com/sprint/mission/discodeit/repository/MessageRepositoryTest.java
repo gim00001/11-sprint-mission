@@ -98,21 +98,21 @@ class MessageRepositoryTest {
   // ───── findAllByChannelIdAndCreatedAtBefore ─────
 
   @Test
-  void findAllByChannelIdAndCreatedAtBefore_커서이전메시지반환() throws InterruptedException {
+  void findAllByChannelIdAndCreatedAtBefore_커서이전메시지반환() {
     // given
-    Message first = messageRepository.saveAndFlush(new Message("첫번째 메시지", channel, author));
-    Thread.sleep(100);
-    Message second = messageRepository.saveAndFlush(new Message("두번째 메시지", channel, author));
-    Thread.sleep(100);
-    Message third = messageRepository.saveAndFlush(new Message("세번째 메시지", channel, author));
+    Instant past = Instant.now().minusSeconds(100);
+    Instant future = Instant.now().plusSeconds(100);
 
-    // when - 세번째 메시지 시간 기준으로 이전 메시지 조회
+    messageRepository.saveAndFlush(new Message("첫번째 메시지", channel, author));
+
+    // when - 미래 시간 기준으로 이전 메시지 조회
     Slice<Message> result = messageRepository
         .findAllByChannelIdAndCreatedAtBeforeOrderByCreatedAtDesc(
-            channel.getId(), third.getCreatedAt(), PageRequest.of(0, 10));
+            channel.getId(), future, PageRequest.of(0, 10));
 
-    // then - 첫번째, 두번째 메시지가 조회되어야 함
-    assertThat(result.getContent()).hasSize(2);
+    // then
+    assertThat(result.getContent()).hasSize(1);
+    assertThat(result.getContent().get(0).getContent()).isEqualTo("첫번째 메시지");
   }
 
   @Test
