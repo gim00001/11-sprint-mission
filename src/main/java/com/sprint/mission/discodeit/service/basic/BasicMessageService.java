@@ -10,6 +10,9 @@ import com.sprint.mission.discodeit.entity.Channel;
 import com.sprint.mission.discodeit.entity.Message;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
+import com.sprint.mission.discodeit.exception.ChannelNotFoundException;
+import com.sprint.mission.discodeit.exception.MessageNotFoundException;
+import com.sprint.mission.discodeit.exception.UserNotFoundException;
 import com.sprint.mission.discodeit.mapper.MessageMapper;
 import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
@@ -56,14 +59,12 @@ public class BasicMessageService implements MessageService {
     Channel channel = channelRepository.findById(request.channelId())
         .orElseThrow(() -> {
           log.warn("메시지 생성 실패 - 존재하지 않는 channelId: {}", request.channelId());
-          return new IllegalArgumentException(
-              "Channel with id " + request.channelId() + " not found");
+          return new ChannelNotFoundException(request.channelId());
         });
     User author = userRepository.findById(request.authorId())
         .orElseThrow(() -> {
           log.warn("메시지 생성 실패 - 존재하지 않는 authorId: {}", request.authorId());
-          return new IllegalArgumentException(
-              "Author with id " + request.authorId() + " not found");
+          return new UserNotFoundException(request.authorId());
         });
 
     Message message = new Message(request.content(), channel, author);
@@ -142,7 +143,7 @@ public class BasicMessageService implements MessageService {
     Message message = messageRepository.findById(messageId)
         .orElseThrow(() -> {
           log.warn("메시지 수정 실패 - 존재하지 않는 id: {}", messageId);
-          return new IllegalArgumentException("Message with id " + messageId + " not found");
+          return new MessageNotFoundException(messageId);
         });
     message.updateContent(request.newContent());
     log.info("메시지 수정 완료 - id: {}", messageId);
@@ -163,7 +164,7 @@ public class BasicMessageService implements MessageService {
     Message message = messageRepository.findById(messageId)
         .orElseThrow(() -> {
           log.warn("메시지 삭제 실패 - 존재하지 않는 id: {}", messageId);
-          return new IllegalArgumentException("Message with id " + messageId + " not found");
+          return new MessageNotFoundException(messageId);
         });
     messageRepository.delete(message);
     log.info("메시지 삭제 완료 - id: {}", messageId);

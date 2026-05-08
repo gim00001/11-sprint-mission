@@ -6,8 +6,8 @@ import com.sprint.mission.discodeit.dto.response.UserDto;
 import com.sprint.mission.discodeit.entity.BinaryContent;
 import com.sprint.mission.discodeit.entity.User;
 import com.sprint.mission.discodeit.entity.UserStatus;
-import com.sprint.mission.discodeit.exception.DuplicateResourceException;
-import com.sprint.mission.discodeit.exception.NotFoundException;
+import com.sprint.mission.discodeit.exception.UserAlreadyExistsException;
+import com.sprint.mission.discodeit.exception.UserNotFoundException;
 import com.sprint.mission.discodeit.mapper.UserMapper;
 import com.sprint.mission.discodeit.repository.BinaryContentRepository;
 import com.sprint.mission.discodeit.repository.UserRepository;
@@ -44,13 +44,11 @@ public class BasicUserService implements UserService {
 
     if (userRepository.existsByUsername(request.username())) {
       log.warn("사용자 생성 실패 - 중복 username: {}", request.username());
-      throw new DuplicateResourceException(
-          "User with username " + request.username() + " already exists");
+      throw new UserAlreadyExistsException("username", request.username());
     }
     if (userRepository.existsByEmail(request.email())) {
       log.warn("사용자 생성 실패 - 중복 email: {}", request.email());
-      throw new DuplicateResourceException(
-          "User with email " + request.email() + " already exists");
+      throw new UserAlreadyExistsException("email", request.email());
     }
 
     BinaryContent profileContent = null;
@@ -86,7 +84,7 @@ public class BasicUserService implements UserService {
     User user = userRepository.findById(id)
         .orElseThrow(() -> {
           log.warn("사용자 조회 실패 - 존재하지 않는 id: {}", id);
-          return new NotFoundException("User with id " + id + " not found");
+          return new UserNotFoundException(id);
         });
     return toDto(user);
   }
@@ -116,20 +114,18 @@ public class BasicUserService implements UserService {
     User user = userRepository.findById(id)
         .orElseThrow(() -> {
           log.warn("사용자 수정 실패 - 존재하지 않는 id: {}", id);
-          return new NotFoundException("User with id " + id + " not found");
+          return new UserNotFoundException(id);
         });
 
     if (request.newUsername() != null && !request.newUsername().equals(user.getUsername())
         && userRepository.existsByUsername(request.newUsername())) {
       log.warn("사용자 수정 실패 - 중복 username: {}", request.newUsername());
-      throw new DuplicateResourceException(
-          "User with username " + request.newUsername() + " already exists");
+      throw new UserAlreadyExistsException("username", request.newUsername());
     }
     if (request.newEmail() != null && !request.newEmail().equals(user.getEmail())
         && userRepository.existsByEmail(request.newEmail())) {
       log.warn("사용자 수정 실패 - 중복 email: {}", request.newEmail());
-      throw new DuplicateResourceException(
-          "User with email " + request.newEmail() + " already exists");
+      throw new UserAlreadyExistsException("email", request.newEmail());
     }
 
     BinaryContent profileContent = null;
@@ -165,7 +161,7 @@ public class BasicUserService implements UserService {
     User user = userRepository.findById(id)
         .orElseThrow(() -> {
           log.warn("사용자 삭제 실패 - 존재하지 않는 id: {}", id);
-          return new NotFoundException("User with id " + id + " not found");
+          return new UserNotFoundException(id);
         });
     userRepository.delete(user);
     log.info("사용자 삭제 완료 - id: {}", id);
